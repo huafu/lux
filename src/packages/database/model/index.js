@@ -1456,6 +1456,11 @@ class Model {
    * @private
    */
   static columnFor(key: string): void | Object {
+    const path = key.split('.', 2);
+    if (path.length === 2) {
+      const rel = this.relationshipFor(path[0]);
+      return rel ? rel.model.columnFor(path[1]) : undefined;
+    }
     return Reflect.get(this.attributes, key);
   }
 

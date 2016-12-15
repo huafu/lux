@@ -8,6 +8,16 @@ import scopesFor from './utils/scopes-for';
 import formatSelect from './utils/format-select';
 import { runQuery, createRunner } from './runner';
 
+
+function snapshotFilterForCount([name, opts]): boolean {
+  // be sure to include the joins used in the where clause
+  if (name === 'leftOuterJoin') {
+    const tableName: string = Reflect.get(opts, 0);
+    return this.whereDependencies[tableName];
+  }
+  return /^(where(Not)?(In)?)$/g.test(name);
+}
+
 /**
  * I am a Query.
  *
@@ -43,6 +53,11 @@ class Query<+T: any> extends Promise {
    * @private
    */
   shouldCount: boolean;
+
+  /**
+   * @private
+   */
+  whereDependencies: Object;
 
   /**
    * @private
@@ -87,6 +102,13 @@ class Query<+T: any> extends Promise {
 
       shouldCount: {
         value: false,
+        writable: true,
+        enumerable: false,
+        configurable: false
+      },
+
+      whereDependencies: {
+        value: {},
         writable: true,
         enumerable: false,
         configurable: false
@@ -163,14 +185,14 @@ class Query<+T: any> extends Promise {
 
   order(attr: string, direction: string = 'ASC'): this {
     if (!this.shouldCount) {
-      const columnName = this.model.columnNameFor(attr);
+      const column = this.model.columnFor(attr);
 
-      if (columnName) {
+      if (column) {
         this.snapshots = this.snapshots
           .filter(([method]) => method !== 'orderBy')
           .concat([
             ['orderBy', [
-              `${this.model.tableName}.${columnName}`,
+              `${column.model.tableName}.${column.columnName}`,
               direction
             ]]
           ]);
@@ -181,18 +203,17 @@ class Query<+T: any> extends Promise {
   }
 
   where(conditions: Object = {}, not: boolean = false): this {
-    const {
-      model: {
-        tableName
-      }
-    } = this;
-
+    const { model } = this;
     const where = entries(conditions).reduce((obj, condition) => {
       let [key, value] = condition;
-      const columnName = this.model.columnNameFor(key);
 
-      if (columnName) {
-        key = `${tableName}.${columnName}`;
+      const column = this.model.columnFor(key);
+
+      if (column) {
+        if (column.model !== model) {
+          this.whereDependencies[column.model.tableName] = true;
+        }
+        key = `${column.model.tableName}.${column.columnName}`;
 
         if (typeof value === 'undefined') {
           value = null;
@@ -258,14 +279,12 @@ class Query<+T: any> extends Promise {
   }
 
   count(): Query<number> {
-    const validName = /^(where(Not)?(In)?)$/g;
-
     Object.assign(this, {
       shouldCount: true,
 
       snapshots: [
         ['count', '* as countAll'],
-        ...this.snapshots.filter(([name]) => validName.test(name))
+        ...this.snapshots.filter(snapshotFilterForCount.bind(this))
       ]
     });
 
@@ -443,7 +462,8 @@ class Query<+T: any> extends Promise {
       snapshots,
       collection,
       shouldCount,
-      relationships
+      relationships,
+      whereDependencies
     } = src;
 
     const dest = Reflect.construct(this, [model]);
@@ -452,7 +472,8 @@ class Query<+T: any> extends Promise {
       snapshots,
       collection,
       shouldCount,
-      relationships
+      relationships,
+      whereDependencies
     });
 
     return dest;

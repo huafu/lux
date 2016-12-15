@@ -140,7 +140,8 @@ export default async function initializeClass<T: Class<Model>>({
       [camelize(columnName, true)]: {
         ...value,
         columnName,
-        docName: dasherize(columnName)
+        docName: dasherize(columnName),
+        model
       }
     }), {});
 
