@@ -44,6 +44,13 @@ export function transformKeys<T: Object | Array<mixed>>(
 /**
  * @private
  */
+export function camelizeKey(key: string): string {
+  return camelize(underscore(key), true);
+}
+
+/**
+ * @private
+ */
 export function camelizeKeys<T: Object | Array<mixed>>(
   source: T,
   deep?: boolean

@@ -2,10 +2,9 @@
 import { camelize } from 'inflection';
 
 import { INT, NULL, BOOL, DATE, TRUE, BRACKETS } from '../constants';
-import isNull from '../../../../../utils/is-null';
 import entries from '../../../../../utils/entries';
 import underscore from '../../../../../utils/underscore';
-import { camelizeKeys } from '../../../../../utils/transform-keys';
+import { camelizeKey } from '../../../../../utils/transform-keys';
 import type { Request$method } from '../../interfaces';
 
 /**
@@ -13,7 +12,7 @@ import type { Request$method } from '../../interfaces';
  */
 function makeArray(source: string | Array<string>): Array<string> {
   if (!Array.isArray(source)) {
-    return source.includes(',') ? source.split(',') : [source];
+    return source.split(',');
   }
 
   return source;
@@ -95,32 +94,22 @@ export function formatInclude(include: string | Array<string>): Array<string> {
  * @private
  */
 export default function format(params: Object, method: Request$method): Object {
-  const result = entries(params).reduce((obj, param) => {
-    const [, value] = param;
-    let [key] = param;
-
-    key = key.replace(BRACKETS, '');
+  const result: Object = {};
+  Object.keys(params).forEach((k) => {
+    const value = params[k];
+    const key = camelizeKey(k.replace(BRACKETS, ''));
 
     switch (typeof value) {
       case 'object':
-        return {
-          ...obj,
-          [key]: isNull(value) ? null : formatObject(value, method, format)
-        };
+        result[key] = formatObject(value, method, format);
+        break;
 
       case 'string':
-        return {
-          ...obj,
-          [key]: formatString(value, key === 'id' ? 'GET' : method)
-        };
+        result[key] = formatString(value, key === 'id' ? 'GET' : method);
+        break;
 
       default:
-        return {
-          ...obj,
-          [key]: value
-        };
+        result[key] = value;
     }
-  }, {});
-
-  return camelizeKeys(result, true);
+  });
 }
