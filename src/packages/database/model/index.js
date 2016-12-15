@@ -540,6 +540,9 @@ class Model {
    */
   static hooks: Model$Hooks;
 
+
+  static transformers: Object;
+
   /**
    * A reference to the application's logger.
    *
