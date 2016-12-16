@@ -15,6 +15,7 @@ export const VALID_DRIVERS = [
 export const TYPE_ALIASES = new Map([
   ['enu', 'array'],
   ['enum', 'array'],
+  ['array', 'array'],
 
   ['json', 'object'],
   ['jsonb', 'object'],
@@ -27,16 +28,20 @@ export const TYPE_ALIASES = new Map([
   ['time', 'date'],
   ['date', 'date'],
   ['datetime', 'date'],
+  ['timestamp', 'date'],
+  ['timestamp with time zone', 'date'],
 
   ['text', 'string'],
   ['uuid', 'string'],
   ['string', 'string'],
   ['varchar', 'string'],
+  ['character varying', 'string'],
 
   ['int', 'number'],
   ['float', 'number'],
   ['integer', 'number'],
   ['decimal', 'number'],
   ['floating', 'number'],
-  ['bigInteger', 'number']
+  ['bigInteger', 'number'],
+  ['double', 'number']
 ]);

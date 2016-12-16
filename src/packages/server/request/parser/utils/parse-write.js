@@ -1,9 +1,17 @@
 // @flow
 import { MalformedRequestError } from '../errors';
+import { DATE } from '../constants';
 import { tryCatchSync } from '../../../../../utils/try-catch';
 import type { Request } from '../../interfaces';
 
 import format from './format';
+
+function reviver(key: string, value: any) {
+  if (typeof value === 'string' && DATE.test(value)) {
+    return new Date(value);
+  }
+  return value;
+}
 
 /**
  * @private
@@ -22,7 +30,7 @@ export default function parseWrite(req: Request): Promise<Object> {
     });
 
     req.once('end', () => {
-      const parsed = tryCatchSync(() => JSON.parse(body));
+      const parsed = tryCatchSync(() => JSON.parse(body, reviver));
 
       cleanUp();
 

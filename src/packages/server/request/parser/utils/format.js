@@ -1,9 +1,6 @@
 // @flow
-import { camelize } from 'inflection';
-
 import { INT, NULL, BOOL, DATE, TRUE, BRACKETS } from '../constants';
-import entries from '../../../../../utils/entries';
-import underscore from '../../../../../utils/underscore';
+import typeOf from '../../../../../utils/type-of';
 import { camelizeKey } from '../../../../../utils/transform-keys';
 import type { Request$method } from '../../interfaces';
 
@@ -24,7 +21,7 @@ function makeArray(source: string | Array<string>): Array<string> {
 function formatString(source: string, method: Request$method): mixed {
   if (method === 'GET') {
     if (source.indexOf(',') >= 0) {
-      return source.split(',').map(str => camelize(underscore(str), true));
+      return source.split(',').map(camelizeKey);
     } else if (INT.test(source)) {
       return Number.parseInt(source, 10);
     } else if (BOOL.test(source)) {
@@ -67,20 +64,21 @@ function formatObject(
  */
 export function formatSort(sort: string): string {
   if (sort.startsWith('-')) {
-    return `-${camelize(underscore(sort.substr(1)), true)}`;
+    return `-${camelizeKey(sort.substr(1))}`;
   }
 
-  return camelize(underscore(sort), true);
+  return camelizeKey(sort);
 }
 
 /**
  * @private
  */
 export function formatFields(fields: Object): Object {
-  return entries(fields).reduce((result, [key, value]) => ({
-    ...result,
-    [key]: makeArray(value)
-  }), {});
+  const result: Object = {};
+  Object.keys(fields).forEach(key => {
+    result[key] = makeArray(fields[key]);
+  });
+  return result;
 }
 
 /**
@@ -99,7 +97,8 @@ export default function format(params: Object, method: Request$method): Object {
     const value = params[k];
     const key = camelizeKey(k.replace(BRACKETS, ''));
 
-    switch (typeof value) {
+    switch (typeOf(value)) {
+      case 'array':
       case 'object':
         result[key] = formatObject(value, method, format);
         break;
@@ -112,4 +111,5 @@ export default function format(params: Object, method: Request$method): Object {
         result[key] = value;
     }
   });
+  return result;
 }
