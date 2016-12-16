@@ -24,12 +24,14 @@ export const TYPE_ALIASES = new Map([
 
   ['bool', 'boolean'],
   ['boolean', 'boolean'],
+  ['tinyint', 'boolean'],
 
   ['time', 'date'],
   ['date', 'date'],
   ['datetime', 'date'],
   ['timestamp', 'date'],
   ['timestamp with time zone', 'date'],
+  ['timestamp without zone', 'date'],
 
   ['text', 'string'],
   ['uuid', 'string'],
@@ -38,6 +40,9 @@ export const TYPE_ALIASES = new Map([
   ['character varying', 'string'],
 
   ['int', 'number'],
+  ['smallint', 'number'],
+  ['mediumint', 'number'],
+  ['bigint', 'number'],
   ['float', 'number'],
   ['integer', 'number'],
   ['decimal', 'number'],
