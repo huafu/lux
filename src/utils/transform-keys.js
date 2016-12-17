@@ -21,7 +21,8 @@ export function transformKeys<T: Object | Array<mixed>>(
         const recurse = deep
           && value
           && typeof value === 'object'
-          && !Array.isArray(value);
+          && !Array.isArray(value)
+          && !(value instanceof Date);
 
         if (recurse) {
           return {
@@ -39,6 +40,13 @@ export function transformKeys<T: Object | Array<mixed>>(
 
     return {};
   });
+}
+
+/**
+ * @private
+ */
+export function camelizeKey(key: string): string {
+  return camelize(underscore(key), true);
 }
 
 /**

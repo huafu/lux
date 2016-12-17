@@ -103,6 +103,7 @@ export default async function buildResults<T: Model>({
         });
     }
 
+    const { transformers } = model;
     const instance = Reflect.construct(model, [
       entries(record)
         .reduce((r, entry) => {
@@ -123,6 +124,11 @@ export default async function buildResults<T: Model>({
               ...parent,
               [b]: value
             };
+          }
+
+          const transformer = transformers[key];
+          if (transformer && transformer.deserialize) {
+            value = transformer.deserialize(value);
           }
 
           return {

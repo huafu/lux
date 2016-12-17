@@ -129,7 +129,7 @@ export default async function initializeClass<T: Class<Model>>({
   table: $PropertyType<T, 'table'>,
   model: T
 }): Promise<T> {
-  let { hooks, scopes, validates } = model;
+  let { hooks, scopes, validates, transformers } = model;
   const { logger } = store;
   const modelName = dasherize(underscore(model.name));
   const resourceName = pluralize(modelName);
@@ -140,7 +140,8 @@ export default async function initializeClass<T: Class<Model>>({
       [camelize(columnName, true)]: {
         ...value,
         columnName,
-        docName: dasherize(columnName)
+        docName: dasherize(columnName),
+        model
       }
     }), {});
 
@@ -301,6 +302,10 @@ export default async function initializeClass<T: Class<Model>>({
     hooks = {};
   }
 
+  if (!transformers) {
+    transformers = {};
+  }
+
   if (!scopes) {
     scopes = {};
   }
@@ -375,6 +380,13 @@ export default async function initializeClass<T: Class<Model>>({
 
     relationshipNames: {
       value: Object.freeze(Object.keys(relationships)),
+      writable: false,
+      enumerable: false,
+      configurable: false
+    },
+
+    transformers: {
+      value: transformers,
       writable: false,
       enumerable: false,
       configurable: false

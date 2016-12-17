@@ -1,11 +1,7 @@
 // @flow
-import { camelize } from 'inflection';
-
 import { INT, NULL, BOOL, DATE, TRUE, BRACKETS } from '../constants';
-import isNull from '../../../../../utils/is-null';
-import entries from '../../../../../utils/entries';
-import underscore from '../../../../../utils/underscore';
-import { camelizeKeys } from '../../../../../utils/transform-keys';
+import typeOf from '../../../../../utils/type-of';
+import { camelizeKey } from '../../../../../utils/transform-keys';
 import type { Request$method } from '../../interfaces';
 
 /**
@@ -13,7 +9,7 @@ import type { Request$method } from '../../interfaces';
  */
 function makeArray(source: string | Array<string>): Array<string> {
   if (!Array.isArray(source)) {
-    return source.includes(',') ? source.split(',') : [source];
+    return source.split(',');
   }
 
   return source;
@@ -25,7 +21,7 @@ function makeArray(source: string | Array<string>): Array<string> {
 function formatString(source: string, method: Request$method): mixed {
   if (method === 'GET') {
     if (source.indexOf(',') >= 0) {
-      return source.split(',').map(str => camelize(underscore(str), true));
+      return source.split(',').map(camelizeKey);
     } else if (INT.test(source)) {
       return Number.parseInt(source, 10);
     } else if (BOOL.test(source)) {
@@ -68,20 +64,21 @@ function formatObject(
  */
 export function formatSort(sort: string): string {
   if (sort.startsWith('-')) {
-    return `-${camelize(underscore(sort.substr(1)), true)}`;
+    return `-${camelizeKey(sort.substr(1))}`;
   }
 
-  return camelize(underscore(sort), true);
+  return camelizeKey(sort);
 }
 
 /**
  * @private
  */
 export function formatFields(fields: Object): Object {
-  return entries(fields).reduce((result, [key, value]) => ({
-    ...result,
-    [key]: makeArray(value)
-  }), {});
+  const result: Object = {};
+  Object.keys(fields).forEach(key => {
+    result[key] = makeArray(fields[key]);
+  });
+  return result;
 }
 
 /**
@@ -95,32 +92,24 @@ export function formatInclude(include: string | Array<string>): Array<string> {
  * @private
  */
 export default function format(params: Object, method: Request$method): Object {
-  const result = entries(params).reduce((obj, param) => {
-    const [, value] = param;
-    let [key] = param;
+  const result: Object = {};
+  Object.keys(params).forEach((k) => {
+    const value = params[k];
+    const key = camelizeKey(k.replace(BRACKETS, ''));
 
-    key = key.replace(BRACKETS, '');
-
-    switch (typeof value) {
+    switch (typeOf(value)) {
+      case 'array':
       case 'object':
-        return {
-          ...obj,
-          [key]: isNull(value) ? null : formatObject(value, method, format)
-        };
+        result[key] = formatObject(value, method, format);
+        break;
 
       case 'string':
-        return {
-          ...obj,
-          [key]: formatString(value, key === 'id' ? 'GET' : method)
-        };
+        result[key] = formatString(value, key === 'id' ? 'GET' : method);
+        break;
 
       default:
-        return {
-          ...obj,
-          [key]: value
-        };
+        result[key] = value;
     }
-  }, {});
-
-  return camelizeKeys(result, true);
+  });
+  return result;
 }

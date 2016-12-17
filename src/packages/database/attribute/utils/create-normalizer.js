@@ -1,30 +1,47 @@
 // @flow
-const BOOLEAN_TYPE = /^(?:boolean|tinyint)$/;
+import typeOf from '../../../../utils/type-of';
+import { normalizeType } from '../../utils/type-for-column';
 
+
+export const normalizers = {
+  boolean(value: any): boolean {
+    if (value != null && typeOf(value) !== 'boolean') {
+      return Boolean(+value);
+    }
+    return value;
+  },
+  string(value: any): string {
+    if (value != null && typeOf(value) !== 'string') {
+      return String(value);
+    }
+    return value;
+  },
+  date(value: any): Date {
+    if (value != null && typeOf(value) !== 'date') {
+      return new Date(value);
+    }
+    return value;
+  },
+  number(value: any): number {
+    const type = typeOf(value);
+    if (value != null && type !== 'number') {
+      if (type === 'string') {
+        const isInt = value.indexOf('.') === -1;
+        return isInt ? Number.parseInt(value, 10) : Number.parseFloat(value);
+      }
+      return Number(value);
+    }
+    return value;
+  },
+  any(value: any): any {
+    return value;
+  },
+};
+
+/**
+ * @private
+ */
 export default function createNormalizer(type: string): (value: any) => any {
-  let normalizer = value => value;
-
-  if (BOOLEAN_TYPE.test(type)) {
-    normalizer = value => {
-      let normalized = value;
-
-      if (typeof value === 'string') {
-        normalized = Number.parseInt(value, 10);
-      }
-
-      return Boolean(normalized);
-    };
-  } else if (type === 'datetime') {
-    normalizer = value => {
-      let normalized = value;
-
-      if (typeof value === 'number') {
-        normalized = new Date(normalized);
-      }
-
-      return normalized;
-    };
-  }
-
-  return normalizer;
+  const jsType = normalizeType(type);
+  return Reflect.get(normalizers, jsType) || normalizers.any;
 }
